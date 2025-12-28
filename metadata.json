@@ -1,0 +1,7 @@
+{
+  "name": "PrintMaster Pro",
+  "description": "Professional photo and document editing suite for large-format printing with AI assistance.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

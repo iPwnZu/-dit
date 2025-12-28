@@ -284,6 +284,34 @@ const App: React.FC = () => {
     // Note: We don't clear selected layer here anymore to allow layer properties editing
   };
 
+  const handleExport = async () => {
+    if (!image) return;
+    
+    const canvas = document.querySelector('canvas');
+    if (!canvas) {
+      alert("No canvas found. Please ensure an image is loaded.");
+      return;
+    }
+
+    try {
+      // Create a link and download canvas as PNG
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `printmaster-export-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export image. Please try again.");
+    }
+  };
+
   const updateLayer = (updates: any) => {
     if (selectedLayerId) {
       setLayers(prev => prev.map(l => {
@@ -480,11 +508,11 @@ const App: React.FC = () => {
            </div>
            
            <button 
-             onClick={() => alert("Processing... Exporting high-fidelity composite with embedded ICC profile.")}
+             onClick={handleExport}
              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-blue-900/20"
              disabled={!image}
            >
-             <Download size={14} /> <span className="hidden md:inline">Export</span>
+             <Download size={14} /> <span className="hidden md:inline">Export PNG</span>
            </button>
         </div>
       </header>

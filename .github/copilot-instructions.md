@@ -28,6 +28,12 @@ Note: UI uses Tailwind-style classes (utility-first classes in JSX). Components 
   - In AI Studio / hosted environment, the app also uses `window.aistudio` helper to prompt the user to select a key (see `upscaleImage` and a few other functions).
 - No tests included; debugging is done via Vite dev server console and browser DevTools.
 
+### Sample `.env.local`
+```
+GEMINI_API_KEY=sk-proj-abc123xyz...
+```
+Restart `npm run dev` after adding/changing the file.
+
 ---
 
 ## Important implementation & patterns to preserve 🧭
@@ -52,6 +58,25 @@ Note: UI uses Tailwind-style classes (utility-first classes in JSX). Components 
   - `analyzeImageForPrint` composes a text prompt requesting a JSON object and caller code expects a clean JSON string (App strips triple backticks before parsing).
 - Key selection pattern: some functions check `window.aistudio` and call `hasSelectedApiKey()` / `openSelectKey()`. Tests or changes that affect key flow should keep these interactions.
 
+### Code example: safe image editing flow
+```typescript
+// In ToolsPanel.tsx handleAiEdit():
+const handleAiEdit = async () => {
+  if (!currentImageSrc || !editPrompt) return;
+  setIsEditing(true);
+  try {
+    const newImage = await editImageWithGemini(currentImageSrc, editPrompt);
+    onImageUpdate(newImage);  // Passes data:image/png;base64,... to parent
+    setEditPrompt("");
+  } catch (e) {
+    alert("Failed to edit image. Check API key & model access.");
+  } finally {
+    setIsEditing(false);
+  }
+};
+```
+Key: always extract base64 from `candidates[0].content.parts[].inlineData.data` and reconstruct `data:image/png;base64,${data}`.
+
 ---
 
 ## Common pitfalls & tests for safety ⚠️
@@ -59,6 +84,22 @@ Note: UI uses Tailwind-style classes (utility-first classes in JSX). Components 
 - Changing image src format (from data URLs to blobs or server URLs) requires updating `cleanBase64()` and all places that call Gemini clients.
 - Don't remove the `cleanBase64` step — GenAI calls assume raw base64 data for `inlineData` parts.
 - Be conservative when changing filter math in `EditorCanvas` — several UI elements and histogram code rely on the same filter semantics.
+
+## Troubleshooting 🔧
+
+| Problem | Root Cause | Fix |
+|---------|-----------|-----|
+| "API Key is missing" error | `process.env.GEMINI_API_KEY` undefined | Check `.env.local` exists with `GEMINI_API_KEY=...` in root, restart `npm run dev` |
+| Image edit returns blank/invalid | Model name outdated or wrong request format | Verify `gemini-2.5-flash-image` in `editImageWithGemini`, check base64 header stripping |
+| Upscale modal doesn't appear | Image already ≥1200px | Test with small image (800×600); threshold check in `App.tsx` `handleFileUpload` |
+| Layers invisible on canvas | Layer `visible: false` or z-order issue | Check `EditorCanvas` reversal logic; ensure `visible: true` in layer state |
+| CMYK color sync broken | Stale state in color picker or bad conversion | Verify `colorUtils.ts` formulas use correct CMYK standards (K=black channel, not composite) |
+| Export button doesn't download PNG | Canvas not found or missing permissions | Ensure image is loaded; check browser console for detailed error |
+
+### Recent fixes ✨
+- Fixed env var mismatch: All code now uses `GEMINI_API_KEY` consistently (fixed in `services/geminiService.ts`, `vite.config.ts`, and `.env.local`)
+- Implemented real PNG export: `handleExport()` in `App.tsx` now downloads rendered canvas as PNG
+- Improved error messages: `getAiClient()` has clearer feedback about missing API key
 
 ---
 

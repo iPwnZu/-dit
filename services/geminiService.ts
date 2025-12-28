@@ -1,10 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 
 const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error("API Key not found");
-    throw new Error("API Key is missing");
+    console.error("API Key not found in process.env.GEMINI_API_KEY");
+    throw new Error("API Key is missing. Check .env.local file.");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -129,7 +129,7 @@ export const upscaleImage = async (imageBase64: string): Promise<string> => {
     }
 
     // Re-initialize client to pick up selected key (if any)
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const cleanData = cleanBase64(imageBase64);
 
     const response = await ai.models.generateContent({
@@ -181,7 +181,7 @@ export const generateVeoVideo = async (imageBase64: string, prompt: string): Pro
     }
 
     // Re-initialize client to pick up selected key (if any)
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const cleanData = cleanBase64(imageBase64);
 
     let operation = await ai.models.generateVideos({
@@ -207,7 +207,7 @@ export const generateVeoVideo = async (imageBase64: string, prompt: string): Pro
     if (!downloadLink) throw new Error("Video generation failed");
 
     // Fetch the actual video bytes using the key
-    const videoResponse = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+    const videoResponse = await fetch(`${downloadLink}&key=${process.env.GEMINI_API_KEY}`);
     const videoBlob = await videoResponse.blob();
     return URL.createObjectURL(videoBlob);
 
